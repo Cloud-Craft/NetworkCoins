@@ -1,0 +1,10 @@
+name: NetworkCoins
+main: online.cloud_craft.networkcoins.NetworkCoinsPlugin
+author: A248
+version: ${project.version}
+description: Network coins plugin for the CloudCraft network
+
+commands:
+  networkcoins:
+    description: Main command
+    usage: /networkcoins

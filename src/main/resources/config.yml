@@ -1,0 +1,8 @@
+connection-pool-size: 3
+default-balance: 200
+auth-details:
+  host: localhost
+  port: 3306
+  database: database_name
+  username: defaultUser
+  password: defaultPassword

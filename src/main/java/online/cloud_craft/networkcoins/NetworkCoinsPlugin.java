@@ -33,7 +33,7 @@ public class NetworkCoinsPlugin extends JavaPlugin {
 	@Override
 	public synchronized void onEnable() {
 		if (wrapper != null) {
-			logger.warn("Someone attempting to enable NetworkCoins twice");
+			logger.warn("Someone attempted to enable NetworkCoins twice");
 			return;
 		}
 		Wrapper wrapper = new Wrapper(this, getDataFolder().toPath());

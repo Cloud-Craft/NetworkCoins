@@ -22,7 +22,6 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.bukkit.ChatColor;
@@ -60,50 +59,56 @@ class BukkitCommands implements CommandExecutor {
 		case "withdraw":
 			withdraw = true;
 		case "deposit":
-			final String playerName = args[1];
-			Player target = wrapper.getPlugin().getServer().getPlayer(playerName);
-			if (target == null) {
-				sendMessage(sender, "&cPlayer &e" + playerName + "&c does not exist");
-				return true;
-			}
-			int amount;
-			try {
-				amount = Integer.parseInt(args[2]);
-			} catch (NumberFormatException ex) {
-				sendMessage(sender, "&e" + args[2] + "&c is not a number");
-				return true;
-			}
-			UUID uuid = target.getUniqueId();
-			DAO dao = core.getDAO();
-			CompletableFuture<Boolean> future;
-			if (withdraw) {
-				future = dao.withdrawCoins(uuid, amount).thenApply((result) -> {
-					sendMessage(sender, "&cPlayer &e" + playerName + "&c does not have enough coins");
-					return result;
-				});
-			} else {
-				future = dao.depositCoins(uuid, amount).thenApply((ignore) -> true);
-			}
-			String commandLine = concatRemaining(args, 3);
-			future.thenAccept((proceed) -> {
-				if (!proceed) {
-					return;
-				}
-				JavaPlugin plugin = wrapper.getPlugin();
-				Server server = plugin.getServer();
-				server.getScheduler().runTask(plugin, () -> {
-					server.dispatchCommand(server.getConsoleSender(), commandLine.replace("%PLAYER%", playerName));
-				});
-			}).whenComplete((ignore, ex) -> {
-				if (ex != null) {
-					LoggerHolder.logger.error("Encountered error while processing command {}", cmd, ex);
-				}
-			});
+			depositOrWithdraw(core, sender, args, withdraw, cmd);
+			return true;
 		default:
 			break;
 		}
 		sendUsage(sender);
 		return true;
+	}
+	
+	private void depositOrWithdraw(Core core, CommandSender sender, String[] args, boolean withdraw, String cmd) {
+		final String playerName = args[1];
+		Player target = wrapper.getPlugin().getServer().getPlayer(playerName);
+		if (target == null) {
+			sendMessage(sender, "&cPlayer &e" + playerName + "&c does not exist");
+			return;
+		}
+		int amount;
+		try {
+			amount = Integer.parseInt(args[2]);
+		} catch (NumberFormatException ex) {
+			sendMessage(sender, "&e" + args[2] + "&c is not a number");
+			return;
+		}
+		UUID uuid = target.getUniqueId();
+		DAO dao = core.getDAO();
+		CompletableFuture<Boolean> future;
+		if (withdraw) {
+			future = dao.withdrawCoins(uuid, amount).thenApply((result) -> {
+				sendMessage(sender, "&cPlayer &e" + playerName + "&c does not have enough coins");
+				return result;
+			});
+		} else {
+			future = dao.depositCoins(uuid, amount).thenApply((ignore) -> true);
+		}
+		String commandLine = concatRemaining(args, 3);
+		future.thenAccept((proceed) -> {
+			if (!proceed) {
+				return;
+			}
+			String cmdToRun = commandLine.replace("%PLAYER%", playerName);
+			JavaPlugin plugin = wrapper.getPlugin();
+			Server server = plugin.getServer();
+			server.getScheduler().runTask(plugin, () -> {
+				server.dispatchCommand(server.getConsoleSender(), cmdToRun);
+			});
+		}).whenComplete((ignore, ex) -> {
+			if (ex != null) {
+				LoggerFactory.getLogger(BukkitCommands.class).error("Encountered error while processing command {}", cmd, ex);
+			}
+		});
 	}
 	
 	private void sendUsage(CommandSender sender) {
@@ -124,10 +129,6 @@ class BukkitCommands implements CommandExecutor {
 			}
 		}
 		return builder.toString();
-	}
-	
-	private static class LoggerHolder {
-		private static final Logger logger = LoggerFactory.getLogger(BukkitCommands.class);
 	}
 
 }

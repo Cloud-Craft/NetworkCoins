@@ -51,7 +51,6 @@ class BukkitCommands implements CommandExecutor {
 			sendUsage(sender);
 			return true;
 		}
-		Core core = wrapper.getCore();
 
 		final String cmd = args[0].toLowerCase(Locale.ENGLISH);
 		boolean withdraw = false;
@@ -59,7 +58,7 @@ class BukkitCommands implements CommandExecutor {
 		case "withdraw":
 			withdraw = true;
 		case "deposit":
-			depositOrWithdraw(core, sender, args, withdraw, cmd);
+			depositOrWithdraw(sender, args, withdraw, cmd);
 			return true;
 		default:
 			break;
@@ -68,7 +67,7 @@ class BukkitCommands implements CommandExecutor {
 		return true;
 	}
 	
-	private void depositOrWithdraw(Core core, CommandSender sender, String[] args, boolean withdraw, String cmd) {
+	private void depositOrWithdraw(CommandSender sender, String[] args, boolean withdraw, String cmd) {
 		final String playerName = args[1];
 		Player target = wrapper.getPlugin().getServer().getPlayer(playerName);
 		if (target == null) {
@@ -82,8 +81,12 @@ class BukkitCommands implements CommandExecutor {
 			sendMessage(sender, "&e" + args[2] + "&c is not a number");
 			return;
 		}
+		if (amount < 0) {
+			sendMessage(sender, "&cAmount must not be negative.");
+			return;
+		}
 		UUID uuid = target.getUniqueId();
-		DAO dao = core.getDAO();
+		DAO dao = wrapper.getCore().getDAO();
 		CompletableFuture<Boolean> future;
 		if (withdraw) {
 			future = dao.withdrawCoins(uuid, amount).thenApply((result) -> {

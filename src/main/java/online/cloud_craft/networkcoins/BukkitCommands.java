@@ -89,16 +89,14 @@ class BukkitCommands implements CommandExecutor {
 		DAO dao = wrapper.getCore().getDAO();
 		CompletableFuture<Boolean> future;
 		if (withdraw) {
-			future = dao.withdrawCoins(uuid, amount).thenApply((result) -> {
-				sendMessage(sender, "&cPlayer &e" + playerName + "&c does not have enough coins");
-				return result;
-			});
+			future = dao.withdrawCoins(uuid, amount);
 		} else {
 			future = dao.depositCoins(uuid, amount).thenApply((ignore) -> true);
 		}
 		String commandLine = concatRemaining(args, 3);
 		future.thenAccept((proceed) -> {
 			if (!proceed) {
+				sendMessage(sender, "&cTransaction failed. Player &e" + playerName + "&c does not have enough coins");
 				return;
 			}
 			String cmdToRun = commandLine.replace("%PLAYER%", playerName);
